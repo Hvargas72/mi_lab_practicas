@@ -1,0 +1,92 @@
+# paso 1 instalar bibliotecas
+from pathlib import Path
+import pandas as pd
+import sys
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# paso 2 verificar la version de python
+print("Version de Python: ", sys.version)
+print("Version de Pandas: ", pd.__version__)
+print("Version de Seaborn: ", sns.__version__)
+
+# 1. Definir la carpeta del script y la raíz del proyecto
+BASE_DIR = Path(__file__).resolve().parent
+ROOT = BASE_DIR.parent
+
+# 2. CARPETA contenedora donde guardaremos todo
+CARPETA_DATOS = ROOT / "datos"
+# Crea la carpeta si no existe
+CARPETA_DATOS.mkdir(parents=True, exist_ok=True)
+
+# 3. RUTA COMPLETA al archivo de entrada (Aquí se define RUTA_ENTRADA)
+RUTA_ENTRADA = CARPETA_DATOS / "dataini.csv"
+
+# 4. Lectura del dataset
+if RUTA_ENTRADA.exists():
+    ds = pd.read_csv(RUTA_ENTRADA)
+    print("¡Archivo 'dataini.csv' cargado con éxito!")
+else:
+    print(f"Error: Guarda 'dataini.csv' en la ubicación: {RUTA_ENTRADA}")
+
+
+# Paso 4 mostrar las primeras filas del dataset
+print(ds.head())
+
+# paso 5 mostrar la informacion del dataset
+print(ds.info())
+
+# paso 6 mostrar valores nulos del dataset
+print("Valores nulos por columna:", ds.isnull().sum().sum())
+print("Valores nulos por columna:", ds.isnull().sum())
+
+# paso 7 describe dataset
+print(ds.describe())
+print(ds.describe(include='all'))
+print(ds.describe(include='all').T)
+
+# paso 8 graficcar dataset
+# sns.countplot(data=ds, x="Abandono")
+# plt.ylabel("Cantidad")
+# plt.title("Distribucion del abandono")
+# plt.show()
+
+# paso 9 graficoAnalisis por tipo de contrato
+# sns.countplot(data=ds, x="Contrato", hue="Abandono")
+# plt.ylabel("Cantidad")
+# plt.title("Distribucion contrato / abandono")
+# plt.show()
+
+# paso 10 depuracion de datos
+#  1. Aseguramos que ds_nuevo sea una copia limpia e independiente
+ds_nuevo = ds.copy()
+# 2. Convertimos a texto, eliminamos espacios Y PASAMOS TODO A MAYÚSCULAS
+ds_nuevo["ClienteID"] = ds_nuevo["ClienteID"].astype(
+    str).str.strip().str.upper()
+# 3. Eliminamos duplicados basados en la columna ya homogeneizada
+ds_nuevo = ds_nuevo.drop_duplicates(subset=["ClienteID"], keep="first")
+# 4. Eliminamos nulos
+ds_nuevo = ds_nuevo.dropna()
+# print(ds_nuevo.describe(include='all').T)
+# print("Valores nulos por columna:", ds_nuevo.isnull().sum())
+# 5. eliminando titulo clienteID
+ds_nuevo = ds_nuevo.drop(columns=["ClienteID"])
+# print(ds_nuevo.describe(include='all').T)
+
+if 'Unnamed: 0' in ds_nuevo.columns:
+    ds_nuevo = ds_nuevo.drop(columns=['Unnamed: 0'])
+
+# Total Cargos llega como texto y se convierte a numero
+ds_nuevo['TotalCargos'] = pd.to_numeric(
+    ds_nuevo["TotalCargos"], errors='coerce')
+ds_nuevo = ds_nuevo.dropna(subset=["TotalCargos"])
+
+print(ds_nuevo.info())
+print("columnas con valores nulos:", ds_nuevo.isnull().sum())
+
+# 5. Guardado del dataset procesado (Línea 102)
+# Usamos CARPETA_DATOS para apuntar a la carpeta y no al archivo antiguo
+ds_nuevo.to_csv(CARPETA_DATOS / "ds.processedP1.csv", index=False)
+print("¡Archivo procesado 'ds.processedP1.csv' guardado correctamente!")
+
+#  hasta aqui gtermina la depuracion del dataset
