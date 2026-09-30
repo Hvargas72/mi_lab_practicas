@@ -31,72 +31,89 @@ modelo = cargar_modelo()
 
 if modelo is not None:
     # --- FORMULARIO: SECCIÓN 1 - DATOS DEL CLIENTE ---
-    st.subheader("👤 Datos del cliente")
+    st.subheader("👤 Datos Personales y Contrato")
     col1, col2 = st.columns(2)
 
     with col1:
         genero = st.selectbox("Género", ["Femenino", "Masculino"])
-        pareja = st.selectbox("¿Tiene pareja?", ["No", "Sí"])
-        antiguedad = st.number_input(
-            "Antigüedad (meses)", min_value=0, max_value=120, value=12)
+        socio = st.selectbox("¿Tiene pareja / socio?", ["No", "Sí"])
+        dependientes = st.selectbox("¿Tiene dependientes?", ["No", "Sí"])
+        permanencia = st.number_input(
+            "Permanencia (meses)", min_value=0, max_value=120, value=12)
+        contrato = st.selectbox("Tipo de contrato", [
+                                "Mes a mes", "Un año", "Dos años"])
 
     with col2:
         jubilado = st.selectbox("¿Es jubilado?", [0, 1])
-        dependientes = st.selectbox("¿Tiene dependientes?", ["No", "Sí"])
+        facturacion = st.selectbox("Facturación electrónica", ["No", "Sí"])
+        metodo_pago = st.selectbox("Método de pago", [
+            "Cheque electrónico",
+            "Cheque enviado",
+            "Transferencia bancaria",
+            "Tarjeta de crédito"
+        ])
+        cargo_mensual = st.number_input(
+            "Cargo Mensual ($)", min_value=0.0, max_value=500.0, value=70.0)
+        total_cargos = st.number_input(
+            "Total Cargos ($)", min_value=0.0, max_value=10000.0, value=840.0)
 
     # --- FORMULARIO: SECCIÓN 2 - SERVICIOS CONTRATADOS ---
-    st.subheader("📺 Servicios contratados")
+    st.subheader("📺 Servicios Contratados")
     col3, col4 = st.columns(2)
 
     with col3:
         servicio_telefonico = st.selectbox("Servicio telefónico", ["No", "Sí"])
-        servicio_internet = st.selectbox("Servicio de internet", [
-                                         "DSL", "Fibra Óptica", "No"])
-        respaldo_online = st.selectbox(
-            "Respaldo online", ["No", "Sí", "Sin servicio de internet"])
-        soporte_tecnico = st.selectbox(
-            "Soporte técnico", ["No", "Sí", "Sin servicio de internet"])
-        streaming_peliculas = st.selectbox(
-            "Streaming películas", ["No", "Sí", "Sin servicio de internet"])
-
-    with col4:
         lineas_multiples = st.selectbox(
             "Líneas múltiples", ["No", "Sí", "Sin servicio telefónico"])
+        internet_service = st.selectbox("Servicio de internet", [
+                                        "DSL", "Fibra Óptica", "No"])
         seguridad_online = st.selectbox(
             "Seguridad online", ["No", "Sí", "Sin servicio de internet"])
+        respaldo_online = st.selectbox(
+            "Respaldo online", ["No", "Sí", "Sin servicio de internet"])
+
+    with col4:
         proteccion_dispositivos = st.selectbox("Protección de dispositivos", [
                                                "No", "Sí", "Sin servicio de internet"])
+        tech_support = st.selectbox("Soporte técnico (TechSupport)", [
+                                    "No", "Sí", "Sin servicio de internet"])
         streaming_tv = st.selectbox(
             "Streaming TV", ["No", "Sí", "Sin servicio de internet"])
+        streaming_movies = st.selectbox(
+            "Streaming películas", ["No", "Sí", "Sin servicio de internet"])
 
     st.markdown("---")
 
     # --- BOTÓN Y PREDICCIÓN ---
     if st.button("Consultar Modelo", type="primary"):
         try:
-            # Crear DataFrame con los datos seleccionados
+            # Estructurar el DataFrame EXACTAMENTE con los nombres de columna que espera el modelo
             datos_cliente = pd.DataFrame([{
-                'genero': genero,
-                'jubilado': jubilado,
-                'pareja': pareja,
-                'dependientes': dependientes,
-                'antiguedad': antiguedad,
-                'servicio_telefonico': servicio_telefonico,
-                'lineas_multiples': lineas_multiples,
-                'servicio_internet': servicio_internet,
-                'seguridad_online': seguridad_online,
-                'respaldo_online': respaldo_online,
-                'proteccion_dispositivos': proteccion_dispositivos,
-                'soporte_tecnico': soporte_tecnico,
-                'streaming_tv': streaming_tv,
-                'streaming_peliculas': streaming_peliculas
+                'Genero': genero,
+                'Jubilado': jubilado,
+                'Socio': socio,
+                'Dependientes': dependientes,
+                'Permanencia': permanencia,
+                'ServicioTelefonico': servicio_telefonico,
+                'LineasMultiples': lineas_multiples,
+                'InternetService': internet_service,
+                'SeguridadOnline': seguridad_online,
+                'RespaldoOnline': respaldo_online,
+                'ProteccionDispositivos': proteccion_dispositivos,
+                'TechSupport': tech_support,
+                'StreamingTV': streaming_tv,
+                'StreamingMovies': streaming_movies,
+                'Contrato': contrato,
+                'Facturacion': facturacion,
+                'MetodoPago': metodo_pago,
+                'CargoMensual': cargo_mensual,
+                'TotalCargos': total_cargos
             }])
 
-            # Evaluar con el modelo
+            # Predecir con el pipeline del modelo
             prediccion = modelo.predict(datos_cliente)[0]
             probabilidad = modelo.predict_proba(datos_cliente)[0][1]
 
-            # Mostrar resultado gráfico
             if prediccion == 1 or str(prediccion).lower() in ['yes', 'si', '1']:
                 st.error(
                     f"⚠️ **Riesgo Elevado**: El cliente tiene un **{probabilidad*100:.1f}%** de probabilidad de abandonar el servicio.")
