@@ -20,9 +20,9 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
 def entrenar_modelos():
-    # 1. Definición de rutas relativas
+    # 1. Definición de rutas relativas (ACTUALIZADO)
     BASE_DIR = Path(__file__).resolve().parent
-    ruta_datos = BASE_DIR.parent / "datos" / "BankChurners_limpio.csv"
+    ruta_datos = BASE_DIR / "datos" / "BankChurners_limpio.csv"
     ruta_modelo_salida = BASE_DIR / "modelo_banco.joblib"
 
     if not ruta_datos.exists():
