@@ -1,41 +1,49 @@
-import os
+# -*- coding: utf-8 -*-
+"""
+Fase 2: Preprocesamiento y Entrenamiento (Tabla Completa de Métricas)
+Práctica 02 - Seguro Médico
+"""
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import joblib
+import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from sklearn.linear_model import Ridge, LinearRegression, Lasso
+from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neighbors import KNeighborsRegressor
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-# 1. Crear carpetas de salida si no existen
-os.makedirs('results/practica02', exist_ok=True)
-os.makedirs('models/practica02', exist_ok=True)
-
-# 2. Cargar datos y dividir 80/20
+# 1. CARGAR DATOS LIMPIOS
 df = pd.read_csv('datos/ds_processedP2.csv')
-X = df.drop(columns=['CostoAnual'])
-y = df['CostoAnual']
+
+# 2. DIVISIÓN DE VARIABLES (X, y)
+TARGET = "CostoAnual"
+FEATURES = [col for col in df.columns if col != TARGET]
+
+X = df[FEATURES]
+y = df[TARGET]
 
 num_cols = X.select_dtypes(include=['int64', 'float64']).columns.tolist()
-cat_cols = X.select_dtypes(include=['object', 'category']).columns.tolist()
+cat_cols = X.select_dtypes(include=['object', 'category', 'string']).columns.tolist()
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42)
+# 3. DIVISIÓN ENTRENAMIENTO Y PRUEBA (80% / 20%)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# 3. Preprocesador
-preprocessor = ColumnTransformer([
-    ('num', Pipeline([('imputer', SimpleImputer(
-        strategy='median')), ('scaler', StandardScaler())]), num_cols),
-    ('cat', Pipeline([('imputer', SimpleImputer(strategy='most_frequent')),
-     ('encoder', OneHotEncoder(handle_unknown='ignore'))]), cat_cols)
+# 4. PREPROCESADOR
+preprocessor = ColumnTransformer(transformers=[
+    ('num', Pipeline([
+        ('imputer', SimpleImputer(strategy='median')),
+        ('scaler', StandardScaler())
+    ]), num_cols),
+    ('cat', Pipeline([
+        ('imputer', SimpleImputer(strategy='most_frequent')),
+        ('encoder', OneHotEncoder(handle_unknown='ignore'))
+    ]), cat_cols)
 ])
 
-# 4. Modelos a evaluar
+# 5. DEFINIR LOS MODELOS
 modelos = {
     'Regresion_Lineal': LinearRegression(),
     'Ridge': Ridge(alpha=1.0),
@@ -44,34 +52,38 @@ modelos = {
     'KNN_Regressor': KNeighborsRegressor(n_neighbors=7)
 }
 
-# 5. Entrenar, Graficar y Guardar
-fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-axes = axes.flatten()
+# 6. PIPELINE FINAL, ENTRENAMIENTO Y EVALUACIÓN COMPLETA
+resultados = []
 
-for idx, (nombre, algoritmo) in enumerate(modelos.items()):
-    pipe = Pipeline(
-        steps=[('preprocessor', preprocessor), ('regressor', algoritmo)])
+for nombre, algoritmo in modelos.items():
+    pipe = Pipeline(steps=[
+        ('preprocessor', preprocessor),
+        ('regressor', algoritmo)
+    ])
+    
+    # Entrenar
     pipe.fit(X_train, y_train)
+    
+    # Hacer predicciones sobre Entrenamiento (para ver si hace trampa/sobreajuste)
+    y_pred_train = pipe.predict(X_train)
+    # Hacer predicciones sobre Prueba (el examen real)
+    y_pred_test = pipe.predict(X_test)
+    
+    # Calcular métricas
+    resultados.append({
+        'Modelo': nombre,
+        'MAE Train': round(mean_absolute_error(y_train, y_pred_train), 2),
+        'MAE Test': round(mean_absolute_error(y_test, y_pred_test), 2),
+        'RMSE Train': round(np.sqrt(mean_squared_error(y_train, y_pred_train)), 2),
+        'RMSE Test': round(np.sqrt(mean_squared_error(y_test, y_pred_test)), 2),
+        'R2 Train': round(r2_score(y_train, y_pred_train), 4),
+        'R2 Test': round(r2_score(y_test, y_pred_test), 4)
+    })
 
-    # Predecir en prueba
-    y_pred = pipe.predict(X_test)
-
-    # Graficar Actividad 5
-    sns.scatterplot(x=y_test, y=y_pred,
-                    ax=axes[idx], alpha=0.6, color='#1B365D')
-    axes[idx].plot([y_test.min(), y_test.max()], [y_test.min(),
-                   y_test.max()], 'r--', lw=2)  # Línea ideal
-    axes[idx].set_title(f'{nombre}')
-    axes[idx].set_xlabel('Costo Real')
-    axes[idx].set_ylabel('Predicción')
-
-    # Actividad 8: Guardar cada modelo
-    ruta_modelo = f'models/practica02/modelo_{nombre.lower()}.joblib'
-    joblib.dump(pipe, ruta_modelo)
-    print(f"Modelo guardado en: {ruta_modelo}")
-
-# Ajustar gráficos y guardar imagen
-axes[5].axis('off')  # Ocultar el 6to recuadro vacío
-plt.tight_layout()
-plt.savefig('results/practica02/prediccion_vs_real.png', dpi=300)
-print("\n[ÉXITO] Gráficos guardados en results/practica02/prediccion_vs_real.png")
+# 7. MOSTRAR LA TABLA COMPLETA
+print("\n" + "="*85)
+print("TABLA COMPARATIVA COMPLETA (ENTRENAMIENTO VS PRUEBA)")
+print("="*85)
+df_eval = pd.DataFrame(resultados)
+print(df_eval.to_string(index=False))
+print("="*85 + "\n")
